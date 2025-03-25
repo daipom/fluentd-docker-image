@@ -10,12 +10,16 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: ['alpine', 'arm64', 'armhf', 'amd64']
     steps:
       - uses: actions/checkout@v4
       - name: Setup tags
         run: |
           set -x
-          component=amd64
+          component=${{ matrix.component }}
           for target in $(make echo-all-images); do
             case $target in
                *$component*)
@@ -26,29 +30,6 @@ jobs:
             esac
             branch=$(echo $target | cut -d'/' -f1)
             tags=$(echo $target | cut -d':' -f2-)
-            tag1=$(echo $tags | cut -d',' -f1)
-            tag2=$(echo $tags | cut -d',' -f2)
-            tag3=$(echo $tags | cut -d',' -f3)
-            echo "CONTEXT=${branch}/debian"
-            echo "AMD64TAGS=${{ env.REPOSITORY }}:${tag1},${{ env.REPOSITORY }}:${tag2},${{ env.REPOSITORY }}:${tag3}"
-          done
-      - name: Setup tags 2
-        run: |
-          set -x
-          component=amd64
-          for target in $(make echo-all-images); do
-            case $target in
-               *$component*)
-                 ;;
-               *)
-                 continue
-                 ;;
-            esac
-            branch=$(echo $target | cut -d'/' -f1)
-            tags=$(echo $target | cut -d':' -f2-)
-            # replaced="$(echo $tags | tr , ' ')"
-            # echo $replaced
-            # final_tag_array=()
             edited_tags=""
             for tag in $(echo $tags | tr , ' '); do
               if [ -z $edited_tags ]; then
@@ -57,5 +38,22 @@ jobs:
                 edited_tags+=",repo:$tag"
               fi
             done
-            echo $edited_tags
+            case $component in
+            *alpine*)
+              echo "CONTEXT=${branch}/${component}"
+              echo "ALPINETAGS=$edited_tags"
+              ;;
+            *arm64*)
+              echo "CONTEXT=${branch}/${component}/debian"
+              echo "ARM64TAGS=$edited_tags"
+              ;;
+            *armhf*)
+              echo "CONTEXT=${branch}/${component}/debian"
+              echo "ARMHFTAGS=$edited_tags"
+              ;;
+            *amd64*)
+              echo "CONTEXT=${branch}/debian"
+              echo "AMD64TAGS=$edited_tags"
+              ;;
+            esac
           done
