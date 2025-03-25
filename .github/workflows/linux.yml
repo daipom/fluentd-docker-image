@@ -8,20 +8,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build & Test
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - dockerfile: v1.18/alpine
-          - dockerfile: v1.18/debian
-          - dockerfile: v1.18/arm64/debian
-    runs-on: >-
-      ${{ (contains(matrix.dockerfile, 'arm64')) && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+  test:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Build
-        run: make image DOCKERFILE=${{ matrix.dockerfile }} VERSION=test
-      - name: Test
-        run: make test DOCKERFILE=${{ matrix.dockerfile }} VERSION=test
+      - uses: actions/checkout@v4
+      - name: Setup tags
+        run: |
+          set -x
+          component=amd64
+          for target in $(make echo-all-images); do
+            case $target in
+               *$component*)
+                 ;;
+               *)
+                 continue
+                 ;;
+            esac
+            branch=$(echo $target | cut -d'/' -f1)
+            tags=$(echo $target | cut -d':' -f2-)
+            tag1=$(echo $tags | cut -d',' -f1)
+            tag2=$(echo $tags | cut -d',' -f2)
+            tag3=$(echo $tags | cut -d',' -f3)
+            echo "CONTEXT=${branch}/debian"
+            echo "AMD64TAGS=${{ env.REPOSITORY }}:${tag1},${{ env.REPOSITORY }}:${tag2},${{ env.REPOSITORY }}:${tag3}"
+          done
