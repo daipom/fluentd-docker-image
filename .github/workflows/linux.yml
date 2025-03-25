@@ -48,10 +48,14 @@ jobs:
             tags=$(echo $target | cut -d':' -f2-)
             # replaced="$(echo $tags | tr , ' ')"
             # echo $replaced
-            final_tag_array=()
+            # final_tag_array=()
+            edited_tags=""
             for tag in $(echo $tags | tr , ' '); do
-              final_tag_array+="repo:${tag}"
+              if [ -z $edited_tags ]; then
+                edited_tags="repo:$tag"
+              else
+                edited_tags+=",repo:$tag"
+              fi
             done
-            final_tags_str="AMD64TAGS=$(IFS=,; echo "${final_tag_array[*]}")"
-            echo $final_tags_str
+            echo $edited_tags
           done
