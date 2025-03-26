@@ -31,8 +31,8 @@ jobs:
             branch=$(echo $target | cut -d'/' -f1)
             tags=$(echo $target | cut -d':' -f2-)
             edited_tags=""
-            for tag in $(echo $tags | tr , ' '); do
-              if [ -z $edited_tags ]; then
+            for tag in $(echo "$tags" | tr , ' '); do
+              if [ -z "$edited_tags" ]; then
                 edited_tags="repo:$tag"
               else
                 edited_tags+=",repo:$tag"
